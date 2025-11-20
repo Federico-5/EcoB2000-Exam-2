@@ -1,0 +1,559 @@
+## **Exercise 1**
+
+# **R-code**
+### Define the pooled-model coefficients (use any numbers)
+y0 <- 1.2   # intercept
+y1 <- 0.05  # slope on Age
+y2 <- -0.8  # effect of D
+y3 <- 0.02  # interaction effect Age*D
+
+### Relationships implied by the model:
+### White households (D = 0): Yw = β0 + β1*Age
+beta0 <- y0
+beta1 <- y1
+
+### Non-White households (D = 1): Ynw = α0 + α1*Age
+alpha0 <- y0 + y2
+alpha1 <- y1 + y3
+
+### Print all relationships
+cat("White group coefficients:\n")
+cat("β0 =", beta0, "\n")
+cat("β1 =", beta1, "\n\n")
+
+cat("Non-White group coefficients:\n")
+cat("α0 =", alpha0, "\n")
+cat("α1 =", alpha1, "\n\n")
+
+### Recover y-coefficients from α and β
+y0_recovered <- beta0
+y1_recovered <- beta1
+y2_recovered <- alpha0 - beta0
+y3_recovered <- alpha1 - beta1
+
+cat("Recovered pooled-model coefficients:\n")
+cat("y0 =", y0_recovered, "\n")
+cat("y1 =", y1_recovered, "\n")
+cat("y2 =", y2_recovered, "\n")
+cat("y3 =", y3_recovered, "\n")
+
+# **Explanation**
+
+The pooled interaction model:
+Y=y0+y1(Age)+y2D+y3(D⋅Age)Y = y_0 + y_1(\text{Age}) + y_2D + y_3(D \cdot \text{Age})Y=y0​+y1​(Age)+y2​D+y3​(D⋅Age)
+Must reproduce the two separate regressions:
+
+- For White households (D = 0):
+YW=β0+β1AgeY_W = \beta_0 + \beta_1 \text{Age}YW​=β0​+β1​Age
+
+- For Non-White households (D = 1):
+YNW=α0+α1AgeY_{NW} = \alpha_0 + \alpha_1 \text{Age}YNW​=α0​+α1​Age
+
+If we plug D=0D=0D=0 into the pooled model, we get:
+YW=y0+y1AgeY_W = y_0 + y_1 \text{Age}YW​=y0​+y1​Age
+So:
+β0=y0,β1=y1\beta_0 = y_0,\qquad \beta_1 = y_1β0​=y0​,β1​=y1​
+
+If we plug D=1D=1D=1 into the pooled model, we get:
+YNW=(y0+y2)+(y1+y3)AgeY_{NW} = (y_0 + y_2) + (y_1 + y_3)\text{Age}YNW​=(y0​+y2​)+(y1​+y3​)Age
+So:
+α0=y0+y2,α1=y1+y3\alpha_0 = y_0 + y_2,\qquad \alpha_1 = y_1 + y_3α0​=y0​+y2​,α1​=y1​+y3​
+
+Thus, the interaction terms shift both the intercept and the slope for the Non-White group relative to the White group.
+
+# **Exercise 2**
+
+load("~/Desktop/Econometrics/R-Data/d_HHP2020_24.Rdata")
+
+# Identify coefficients
+names(d_HHP2020_24)
+
+# OLS regression
+ols_model1 <- lm(K4SUM ~ Education + income_midpoint + Age,
+                 data = d_HHP2020_24)
+
+summary(ols_model1)
+
+library(car)
+
+data_clean <- d_HHP2020_24 %>%
+  dplyr::select(K4SUM, Education, income_midpoint, Age) %>%
+  na.omit()
+
+ols_model1 <- lm(K4SUM ~ Education + income_midpoint + Age,
+                 data = data_clean)
+
+model_no_educ <- lm(K4SUM ~ income_midpoint + Age,
+                    data = data_clean)
+
+model_no_income <- lm(K4SUM ~ Education + Age,
+                      data = data_clean)
+
+anova(model_no_educ, ols_model1)
+
+anova(model_no_income, ols_model1)
+
+# Joint test: all Education coefficients = 0
+anova(model_no_educ, ols_model1)
+
+# Joint test: all income coefficients = 0
+anova(model_no_income, ols_model1)
+
+# Conclusion:
+
+# I estimated a regression to see how much Education, Income (income_midpoint), and Age explain differences in mental health (measured by K4SUM). 
+# After fitting the model, I ran two joint hypothesis tests. 
+# The first test checked whether all Education coefficients were equal to zero. 
+# The second test checked whether all income coefficients were equal to zero. 
+# These tests compare the full model to a reduced model that excludes one group of variables.
+# The p-values from the joint tests tell us whether each block of variables adds meaningful predictive power. 
+# A small p-value means that the group of variables significantly improves the model; a large p-value means it does not. 
+# By comparing these p-values, we learn the relative importance of Education and Income in predicting mental health.
+
+# **Exercise 3**
+
+# Why an high income_midpoint (more than $75,000) ?
+# I was curious to see how "wealthy" people react or are affected by mental health.
+# I am expecting high statistical results for this subset.
+
+# SUBSET: keep only individuals with income > 75,000
+high_inc <- d_HHP2020_24 %>%
+  filter(income_midpoint > 75000) %>%
+  na.omit()   # remove missing values for clean summaries
+
+# Summary statistics
+summary(high_inc$K4SUM)
+summary(high_inc$Education)
+summary(high_inc$income_midpoint)
+summary(high_inc$Age)
+
+# Or: full summary table
+summary(high_inc)
+
+# Quick look at the distribution of K4SUM
+table(high_inc$K4SUM)
+
+# Mean K4SUM among high-income individuals
+mean(high_inc$K4SUM)
+
+library(dplyr)
+install.packages("skimr")
+library(skimr)
+
+# High-income subset
+high_inc <- d_HHP2020_24 %>%
+  filter(income_midpoint > 75000) %>%
+  na.omit()
+
+# Clean summary table of key variables
+summary_table <- high_inc %>%
+  select(K4SUM, Education, income_midpoint, Age)
+
+skim(summary_table)
+
+summary_table <- summary(high_inc[, c("K4SUM", "Education", "income_midpoint", "Age")])
+summary_table
+
+library(dplyr)
+
+data.frame(
+  Variable = c("K4SUM", "Age", "Income Midpoint"),
+  Mean     = c(mean(high_inc$K4SUM),
+               mean(high_inc$Age),
+               mean(high_inc$income_midpoint)),
+  Median   = c(median(high_inc$K4SUM),
+               median(high_inc$Age),
+               median(high_inc$income_midpoint)),
+  SD       = c(sd(high_inc$K4SUM),
+               sd(high_inc$Age),
+               sd(high_inc$income_midpoint)),
+  Min      = c(min(high_inc$K4SUM),
+               min(high_inc$Age),
+               min(high_inc$income_midpoint)),
+  Max      = c(max(high_inc$K4SUM),
+               max(high_inc$Age),
+               max(high_inc$income_midpoint))
+)
+
+# Conclusion:
+
+# Even among people earning more than $75,000, mental-health distress is still common and varies a lot. 
+# The average K4SUM score is about 6.5, which suggests a moderate level of symptoms in this group. 
+# Many high-income individuals report very low distress (a score of 4), but a noticeable number show much higher levels (scores of 10–16). 
+#So, higher income clearly doesn’t remove mental-health challenges. This group is older on average (around 47 years old) and generally well-educated, yet distress is still present. 
+# Overall, the results show that mental-health issues can affect people even when they are financially secure, which makes this subgroup worth studying on its own.
+
+# **Exercise 4**
+
+# Part A
+
+high_inc$MentalHealth_01 <- as.numeric(high_inc$K4SUM > 8)
+
+# OLS model (Linear Probability Model)
+lpm1 <- lm(MentalHealth_01 ~ Age + Education + income_midpoint + Mar_Stat +
+             Age:Education,   # interaction
+           data = high_inc)
+
+summary(lpm1)
+
+# Conlusion:
+
+# I use Age, Education, income_midpoint, and Mar_Stat as predictors because each captures an important social or economic factor related to mental health. 
+# Age reflects life-cycle stress, education relates to resources and coping skills, income measures financial security, and marital status captures social support or stress from relationship changes.
+# Age is clearly exogenous, but education, income, and marital status may be partly endogenous because long-term mental-health problems can influence schooling, earnings, or relationship stability. 
+# Still, they are reasonable predictors for a descriptive model.
+# I include Age × Education interactions because the effect of age on mental health likely differs by education level. 
+# The results support this: the interaction terms are significant, meaning mental-health patterns across age vary depending on someone’s level of education.
+
+# Part B
+
+# 1. Full regression output
+summary(lpm1)
+
+# 2. Extract coefficients and p-values
+coefs <- summary(lpm1)$coefficients
+coefs
+
+# 3. See which variables are statistically significant at 5%
+sig_5pct <- coefs[, "Pr(>|t|)"] < 0.05
+sig_5pct
+
+# Conclusion:
+
+# The results from the linear probability model look reasonable and match what I’d expect for mental-health patterns in a high-income group. Higher income strongly lowers the chance of reporting severe mental-health symptoms, which makes sense even among wealthier individuals. 
+# Marital status also plays a big role: being widowed, divorced, separated, or never married all raise the probability of distress compared to being married.
+# Education shows a clear pattern too—people with lower education levels are more likely to experience poor mental health, even within this wealthy sample. 
+# The interaction terms between Age and Education are negative and significant, suggesting that the protective effect of education becomes stronger as people get older.
+# Age on its own isn’t significant (p ≈ 0.25), meaning it doesn’t predict mental-health distress once income, education, marital status, and their interactions are considered. 
+# Its influence mainly shows up through the interaction with education.
+# The overall fit of the model is low (R² ≈ 0.03), which is normal for mental-health data, but the signs and significance of the coefficients make sense. 
+# Overall, the findings show that—even among high-income individuals—education, income, and marital status all meaningfully help explain who experiences mental-health difficulties.
+
+# Part C
+
+# Joint Test for All Education Coefficients = 0
+
+linearHypothesis(lpm1,
+                 c("Educationsome hs = 0",
+                   "Educationhigh school = 0",
+                   "Educationsome college = 0",
+                   "Educationassoc deg = 0",
+                   "Educationcollege grad = 0",
+                   "Educationadv degree = 0"))
+
+# Joint test INCLUDING interactions (Education + Age:Education)
+
+linearHypothesis(lpm1,
+                 c("Educationsome hs = 0",
+                   "Educationhigh school = 0",
+                   "Educationsome college = 0",
+                   "Educationassoc deg = 0",
+                   "Educationcollege grad = 0",
+                   "Educationadv degree = 0",
+                   "Age:Educationsome hs = 0",
+                   "Age:Educationhigh school = 0",
+                   "Age:Educationsome college = 0",
+                   "Age:Educationassoc deg = 0",
+                   "Age:Educationcollege grad = 0",
+                   "Age:Educationadv degree = 0"))
+
+# Conclsuion:
+
+# Both joint tests show extremely small p-values (< 2.2e-16), so I reject the null hypotheses. 
+# This means that education—both the main effects and the age interactions—significantly contributes to predicting poor mental health in the high-income group.
+
+# Part D
+
+# I selected three example profiles to illustrate how predicted mental-health risk changes across realistic combinations of age, education, income, and marital status:
+# A young person with low education who is unmarried.
+  # This group is often more vulnerable to stress or instability, and helps show how the model predicts risk for individuals with multiple potential disadvantages.
+
+# A middle-aged, college-educated, married person with higher income.
+  # This represents a more stable and resource-rich profile. It shows how the model predicts mental-health outcomes for someone with characteristics typically associated with lower distress.
+
+# An older individual with an advanced degree and high income who is divorced.
+  # This case combines high socioeconomic status with a potentially stressful marital situation, allowing us to see how the model responds to mixed risk factors.
+
+#Together, these examples cover low, medium, and high predicted-risk scenarios, helping show how different social and economic characteristics affect the probability of poor mental health.
+
+new_people <- data.frame(
+  Age = c(25, 45, 60),
+  Education = factor(c("some hs", "college grad", "adv degree"),
+                     levels = levels(high_inc$Education)),
+  income_midpoint = c(80000, 150000, 200000),
+  Mar_Stat = factor(c("never", "Married", "divorced"),
+                    levels = levels(high_inc$Mar_Stat))
+)
+
+# Predicted probabilities from mine OLS model
+predict(lpm1, newdata = new_people)
+
+# Conclusion:
+
+# The predicted probabilities show clear differences across the three example groups. 
+# The young person with low education and lower income has the highest predicted probability of severe mental-health distress (about 35%). 
+# The middle-aged married college graduate has a substantially lower probability (18%), reflecting the protective effects of higher education, higher income, and marital stability. 
+# The older, highly educated divorced individual has the lowest predicted probability (13%), suggesting that age and advanced education reduce the risk even when marital status is less favorable. 
+
+#Overall, the model suggests that education, income, age, and marital status meaningfully shape mental-health risk even within the high-income population.
+
+# Parte E
+
+# 1. Get predicted probabilities from the LPM
+pred_probs <- predict(lpm1, newdata = high_inc)
+
+# 2. Turn probabilities into predicted classes (0/1) using 0.5 cutoff
+pred_class <- ifelse(pred_probs > 0.5, 1, 0)
+
+# 3. Actual classes
+actual <- high_inc$MentalHealth_01
+
+# 4. Confusion matrix (for reference)
+conf_matrix <- table(predicted = pred_class, actual = actual)
+print(conf_matrix)
+
+# 5. Type I and Type II errors computed directly
+
+# Type I Error (False Positive): predict 1, actual 0
+type1_error_count <- sum(pred_class == 1 & actual == 0, na.rm = TRUE)
+
+# Type II Error (False Negative): predict 0, actual 1
+type2_error_count <- sum(pred_class == 0 & actual == 1, na.rm = TRUE)
+
+cat("Type I Errors (False Positives):", type1_error_count, "\n")
+cat("Type II Errors (False Negatives):", type2_error_count, "\n")
+
+# Consluion:
+
+# The model makes both Type I and Type II errors. 
+# It is more likely to miss true cases of poor mental health (Type II errors) than to incorrectly label someone as distressed (Type I errors), showing that the model tends to under-predict severe mental-health problems in this high-income group.
+
+# Exercise 5
+
+# Part A
+
+logit1 <- glm(MentalHealth_01 ~ Age + Education + income_midpoint + Mar_Stat,
+              data = high_inc,
+              family = binomial)
+
+summary(logit1)
+
+# Consluion:
+
+# I use Age, Education, income_midpoint, and Mar_Stat as predictors because they are important demographic and socioeconomic factors that influence mental health. 
+# Age captures life-cycle patterns, education reflects coping skills and socioeconomic advantages, income measures financial security, and marital status captures social support or social stress.
+
+# Age is fully exogenous—mental health cannot affect someone’s age.
+# Education, income, and marital status are partially endogenous, because long-term mental-health struggles can influence schooling, earnings, and relationship stability.
+# However, for prediction (not causal inference), these variables are appropriate and informative.
+
+# Mine results show patterns that make sense:
+  # Age has a large, negative, and highly significant effect (p < 2e-16):
+    # Older individuals in the high-income sample are less likely to report severe mental-health distress.
+
+  # Education: Several education levels (high school, college grad, advanced degree) have significant negative coefficients, meaning higher education reduces the odds of poor mental health. 
+  #Lower education tends to increase risk.
+
+  # income_midpoint is extremely significant (p < 2e-16) and negative:
+    # Even within the high-income group, higher income still reduces mental-health distress.
+
+  # Marital status: Widowed, divorced, separated, or never married individuals all have significantly higher odds of poor mental health compared to married people. 
+    # This is consistent with the idea that social support matters.
+
+# Part B:
+
+# Yes, the estimates are plausible and consistent with expected patterns in mental-health research. 
+# Most coefficients—especially age, income, and marital status—are highly statistically significant, while a few education categories are not. 
+# This indicates that the model captures meaningful variation in mental-health risk within the high-income subsample.
+
+# Part C
+
+library(car)
+
+linearHypothesis(logit1,
+                 c("Educationsome hs = 0",
+                   "Educationhigh school = 0",
+                   "Educationsome college = 0",
+                   "Educationassoc deg = 0",
+                   "Educationcollege grad = 0",
+                   "Educationadv degree = 0"))
+
+linearHypothesis(logit1,
+                 c("Mar_Statwidowed = 0",
+                   "Mar_Statdivorced = 0",
+                   "Mar_Statseparated = 0",
+                   "Mar_Statnever = 0"))
+
+# Conclusion:
+
+# If the p-value is < 0.05, you reject the null and conclude:
+  # “As a group, these variables significantly improve the prediction of MentalHealth_01.”
+# If the p-value is > 0.05, you fail to reject:
+  # “As a group, these variables do not significantly explain variation in MentalHealth_01.”
+
+# Part D
+
+# Example profiles for prediction
+new_people_logit <- data.frame(
+  Age = c(25, 45, 60),
+  Education = factor(c("some hs", "college grad", "adv degree"),
+                     levels = levels(high_inc$Education)),
+  income_midpoint = c(80000, 150000, 200000),
+  Mar_Stat = factor(c("never", "Married", "divorced"),
+                    levels = levels(high_inc$Mar_Stat))
+)
+
+# Predicted probabilities from the LOGIT model
+predict(logit1, newdata = new_people_logit, type = "response")
+
+# Conclusion:
+
+# These predicted probabilities show that age, education, marital status, and income meaningfully shape mental-health risk. 
+# Younger and less educated individuals are substantially more likely to experience severe distress, while higher education, marriage, and older age all lower the predicted probability.
+
+# Part E
+
+# 1. Predicted probabilities from the logit model
+logit_probs <- predict(logit1, newdata = high_inc, type = "response")
+
+# 2. Turn probabilities into predicted classes (0/1) with cutoff 0.5
+logit_pred_class <- ifelse(logit_probs > 0.5, 1, 0)
+
+# 3. Actual values
+actual <- high_inc$MentalHealth_01
+
+# 4. Confusion matrix
+conf_matrix_logit <- table(predicted = logit_pred_class,
+                           actual = actual)
+conf_matrix_logit
+
+# 5. Count Type I and Type II errors
+
+# Type I error (False Positive): predicted 1, actual 0
+type1_logit <- sum(logit_pred_class == 1 & actual == 0, na.rm = TRUE)
+
+# Type II error (False Negative): predicted 0, actual 1
+type2_logit <- sum(logit_pred_class == 0 & actual == 1, na.rm = TRUE)
+
+cat("Type I errors (false positives):", type1_logit, "\n")
+cat("Type II errors (false negatives):", type2_logit, "\n")
+
+# Conclusion:
+
+# The logit model makes very few Type I errors (only 8 false positives), meaning it almost never predicts poor mental health when it is not present. 
+# However, it makes a large number of Type II errors (50,930 false negatives), meaning it frequently fails to detect individuals who actually do report severe mental-health distress. 
+# This shows that the model is highly conservative and tends to under-predict mental-health problems in the high-income subsample.
+
+# Part F
+
+# Compared with the OLS model, the logit model is much more conservative. 
+# Logit makes almost no Type I errors (only 8 false positives), while OLS typically produces more false positives because it predicts probabilities in a more linear and less restrictive way.
+# However, the logit model makes far more Type II errors (over 50,000 false negatives). 
+# This means logit frequently fails to identify people who truly experience poor mental health. 
+# In contrast, OLS usually makes fewer Type II errors because it tends to predict higher probabilities and therefore flags more individuals as positive cases.
+# Overall, logit avoids false alarms but misses many true cases, while OLS catches more true cases but at the cost of more false positives. This shows a trade-off between sensitivity (OLS) and specificity (logit).
+
+# **Exercise 6**
+
+library(randomForest)
+
+set.seed(123)
+rf_model <- randomForest(
+  as.factor(MentalHealth_01) ~ Age + Education + income_midpoint + Mar_Stat,
+  data = high_inc,
+  ntree = 300,
+  importance = TRUE
+)
+
+rf_model
+importance(rf_model)
+
+# I use the same predictors—Age, Education, income_midpoint, Mar_Stat—to keep the model comparable to OLS and logit. 
+# These variables capture demographic, socioeconomic, and relationship factors strongly related to mental health. 
+# The exogeneity concerns are the same as before: age is exogenous, while education, income, and marital status may be partially endogenous, but they work well for prediction.
+
+rf_pred <- predict(rf_model, high_inc)
+rf_conf <- table(predicted = rf_pred, actual = high_inc$MentalHealth_01)
+rf_conf
+
+# The Random Forest model performs much better than the logit model. 
+# It makes only 43 Type I errors (false positives) and 50,694 Type II errors (false negatives). This means the model rarely misclassifies someone as having poor mental health when they do not, and it correctly identifies more true cases than the logit model. 
+# Overall, the Random Forest is more sensitive and produces fewer mistakes than the earlier models.
+
+library(glmnet)
+
+X <- model.matrix(MentalHealth_01 ~ Age + Education + income_midpoint + Mar_Stat,
+                  data = high_inc)[, -1]
+y <- high_inc$MentalHealth_01
+
+cv_en <- cv.glmnet(X, y, family = "binomial", alpha = 0.5)
+en_model <- glmnet(X, y, family = "binomial", alpha = 0.5, lambda = cv_en$lambda.min)
+
+en_model
+
+# The Elastic Net model (α = 0.5) selects 11 predictors and explains about 3.42% of the deviance, using an optimal penalty level of λ = 0.001526. 
+# This means the model keeps only the predictors that add meaningful predictive value while shrinking weaker ones toward zero. 
+# The Elastic Net provides a more compact model than OLS or logit, reducing noise and multicollinearity, but still capturing the key relationships in the data. 
+# It balances complexity and prediction accuracy, offering a cleaner, more stable set of predictors for mental-health risk within the high-income group.
+
+# Conclusion:
+
+# *Random Forest vs. OLS & Logit*
+
+#Strengths:
+  # Captures nonlinear effects and interactions automatically.
+  # Usually increases prediction accuracy.
+  # Handles complex relationships between income, education, and age.
+  # Low Type I and Type II errors compared to logit
+#Weaknesses:
+  # Harder to interpret (“black box”).
+  # No simple coefficient interpretation.
+  # Slower with large data. 
+
+# *Elastic Net vs. OLS & Logit
+
+# Strengths:
+  # Performs variable selection.
+  # Reduces multicollinearity.
+  # Good predictive performance.
+  # Penalizes noisy predictors.
+#Weaknesses:
+  # Coefficients shrink toward zero - harder to interpret causally.
+  # Requires tuning (choice of lambda, alpha).
+  # OLS & Logit vs. ML Models.
+
+# Summary
+# *Random Forest vs. OLS & Logit*
+
+#Strengths:
+  # Captures nonlinear effects and interactions automatically.
+  # Usually increases prediction accuracy.
+  # Handles complex relationships between income, education, and age.
+  # Low Type I and Type II errors compared to logit
+#Weaknesses:
+  # Harder to interpret (“black box”).
+  # No simple coefficient interpretation.
+  # Slower with large data. 
+
+# *Elastic Net vs. OLS & Logit
+
+# Strengths:
+  # Performs variable selection.
+  # Reduces multicollinearity.
+  # Good predictive performance.
+  # Penalizes noisy predictors.
+#Weaknesses:
+  # Coefficients shrink toward zero - harder to interpret causally.
+  # Requires tuning (choice of lambda, alpha).
+  # OLS & Logit vs. ML Models.
+
+# Summary
+# OLS is easy to interpret but does not predict very well and tends to make more classification errors. 
+# Logit models handle probabilities better, but in this dataset, logit produced a huge number of Type II errors. 
+# The machine-learning models — Random Forest and Elastic Net — offer better predictive performance, fewer mistakes, and capture nonlinear patterns, but they lose interpretability.
+
+
+
+
+
+
