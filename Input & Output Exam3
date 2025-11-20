@@ -1,0 +1,907 @@
+# File was too big in order to upload it through .RData :)
+
+> setwd("~/Desktop/Econometrics/R-Data")
+> 
+> # Opening libraries and packages 
+> library(tidyverse)
+> library(ggplot2)
+> library(haven)
+> 
+> #Exercise 1
+> 
+> ### Define the pooled-model coefficients (use any numbers you like)
+> y0 <- 1.2   # intercept
+> y1 <- 0.05  # slope on Age
+> y2 <- -0.8  # effect of D
+> y3 <- 0.02  # interaction effect Age*D
+> 
+> ### Relationships implied by the model:
+> ### White households (D = 0): Yw = β0 + β1*Age
+> beta0 <- y0
+> beta1 <- y1
+> 
+> ### Non-White households (D = 1): Ynw = α0 + α1*Age
+> alpha0 <- y0 + y2
+> alpha1 <- y1 + y3
+> 
+> ### Print all relationships
+> cat("White group coefficients:\n")
+White group coefficients:
+> cat("β0 =", beta0, "\n")
+β0 = 1.2 
+> cat("β1 =", beta1, "\n\n")
+β1 = 0.05 
+
+> 
+> cat("Non-White group coefficients:\n")
+Non-White group coefficients:
+> cat("α0 =", alpha0, "\n")
+α0 = 0.4 
+> cat("α1 =", alpha1, "\n\n")
+α1 = 0.07 
+
+> 
+> ### OPTIONAL: Recover y-coefficients from α and β
+> y0_recovered <- beta0
+> y1_recovered <- beta1
+> y2_recovered <- alpha0 - beta0
+> y3_recovered <- alpha1 - beta1
+> 
+> cat("Recovered pooled-model coefficients:\n")
+Recovered pooled-model coefficients:
+> cat("y0 =", y0_recovered, "\n")
+y0 = 1.2 
+> cat("y1 =", y1_recovered, "\n")
+y1 = 0.05 
+> cat("y2 =", y2_recovered, "\n")
+y2 = -0.8 
+> cat("y3 =", y3_recovered, "\n")
+y3 = 0.02 
+> # Exercise 2
+> 
+> load("~/Desktop/Econometrics/R-Data/d_HHP2020_24.Rdata")
+> 
+> # Identify coefficients
+> names(d_HHP2020_24)
+ [1] "Age"                    "Gender"                 "Education"              "Mar_Stat"               "income_midpoint"       
+ [6] "Race"                   "Hispanic"               "Number_people_HH"       "Number_kids_HH"         "Number_adults_HH"      
+[11] "private_health_ins"     "public_health_ins"      "work_kind"              "workloss"               "income_midpoint_factor"
+[16] "State"                  "Region"                 "Census_division"        "DOWN"                   "ANXIOUS"               
+[21] "WORRY"                  "INTEREST"               "YEAR"                   "Begin_Date"             "K4SUM"                 
+> 
+> # OLS regression
+> ols_model1 <- lm(K4SUM ~ Education + income_midpoint + Age,
++                  data = d_HHP2020_24)
+> 
+> summary(ols_model1)
+
+Call:
+lm(formula = K4SUM ~ Education + income_midpoint + Age, data = d_HHP2020_24)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-6.0550 -2.3191 -0.8763  1.5629 12.4781 
+
+Coefficients:
+                        Estimate Std. Error  t value Pr(>|t|)    
+(Intercept)            1.116e+01  4.964e-02  224.716  < 2e-16 ***
+Educationsome hs      -2.647e-01  5.777e-02   -4.583 4.59e-06 ***
+Educationhigh school  -3.984e-01  4.922e-02   -8.094 5.79e-16 ***
+Educationsome college -1.273e-01  4.873e-02   -2.613  0.00897 ** 
+Educationassoc deg    -2.828e-01  4.937e-02   -5.728 1.01e-08 ***
+Educationcollege grad -5.124e-01  4.868e-02  -10.526  < 2e-16 ***
+Educationadv degree   -4.645e-01  4.886e-02   -9.507  < 2e-16 ***
+income_midpoint       -1.062e-05  6.022e-08 -176.397  < 2e-16 ***
+Age                   -5.376e-02  2.299e-04 -233.860  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 3.198 on 792413 degrees of freedom
+  (192368 observations deleted due to missingness)
+Multiple R-squared:  0.1057,	Adjusted R-squared:  0.1057 
+F-statistic: 1.171e+04 on 8 and 792413 DF,  p-value: < 2.2e-16
+
+> 
+> library(car)
+> 
+> data_clean <- d_HHP2020_24 %>%
++   dplyr::select(K4SUM, Education, income_midpoint, Age) %>%
++   na.omit()
+> 
+> ols_model1 <- lm(K4SUM ~ Education + income_midpoint + Age,
++                  data = data_clean)
+> 
+> model_no_educ <- lm(K4SUM ~ income_midpoint + Age,
++                     data = data_clean)
+> 
+> model_no_income <- lm(K4SUM ~ Education + Age,
++                       data = data_clean)
+> 
+> anova(model_no_educ, ols_model1)
+Analysis of Variance Table
+
+Model 1: K4SUM ~ income_midpoint + Age
+Model 2: K4SUM ~ Education + income_midpoint + Age
+  Res.Df     RSS Df Sum of Sq     F    Pr(>F)    
+1 792419 8118647                                 
+2 792413 8102543  6     16105 262.5 < 2.2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> anova(model_no_income, ols_model1)
+Analysis of Variance Table
+
+Model 1: K4SUM ~ Education + Age
+Model 2: K4SUM ~ Education + income_midpoint + Age
+  Res.Df     RSS Df Sum of Sq     F    Pr(>F)    
+1 792414 8420708                                 
+2 792413 8102543  1    318165 31116 < 2.2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> # Joint test: all Education coefficients = 0
+> anova(model_no_educ, ols_model1)
+Analysis of Variance Table
+
+Model 1: K4SUM ~ income_midpoint + Age
+Model 2: K4SUM ~ Education + income_midpoint + Age
+  Res.Df     RSS Df Sum of Sq     F    Pr(>F)    
+1 792419 8118647                                 
+2 792413 8102543  6     16105 262.5 < 2.2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> # Joint test: all income coefficients = 0
+> anova(model_no_income, ols_model1)
+Analysis of Variance Table
+
+Model 1: K4SUM ~ Education + Age
+Model 2: K4SUM ~ Education + income_midpoint + Age
+  Res.Df     RSS Df Sum of Sq     F    Pr(>F)    
+1 792414 8420708                                 
+2 792413 8102543  1    318165 31116 < 2.2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> # Exercise 3
+> 
+> # SUBSET: keep only individuals with income > 75,000
+> high_inc <- d_HHP2020_24 %>%
++   filter(income_midpoint > 75000) %>%
++   na.omit()   # remove missing values for clean summaries
+> 
+> # Summary statistics
+> summary(high_inc$K4SUM)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  4.000   4.000   5.000   6.482   8.000  16.000 
+> summary(high_inc$Education)
+       lt hs      some hs  high school some college    assoc deg college grad   adv degree 
+         317          712        13185        36114        21278        95870       102690 
+> summary(high_inc$income_midpoint)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  82500  125000  125000  147530  175000  225000 
+> summary(high_inc$Age)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  17.00   38.00   46.00   47.19   56.00   88.00 
+> 
+> # Or: full summary table
+> summary(high_inc)
+      Age           Gender              Education           Mar_Stat      income_midpoint     Race                Hispanic     
+ Min.   :17.00   male  :131217   lt hs       :   317   Married  :196185   Min.   : 82500   white:228433   not Hispanic:251810  
+ 1st Qu.:38.00   female:137470   some hs     :   712   widowed  :  3593   1st Qu.:125000   Black: 13410   Hispanic    : 18356  
+ Median :46.00   trans :   350   high school : 13185   divorced : 25203   Median :125000   Asian: 17039                        
+ Mean   :47.19   other :  1129   some college: 36114   separated:  2671   Mean   :147530   other: 11284                        
+ 3rd Qu.:56.00                   assoc deg   : 21278   never    : 42514   3rd Qu.:175000                                       
+ Max.   :88.00                   college grad: 95870                      Max.   :225000                                       
+                                 adv degree  :102690                                                                           
+ Number_people_HH Number_kids_HH   Number_adults_HH                    private_health_ins                   public_health_ins 
+ Min.   : 1.000   Min.   :0.0000   Min.   : 1.000   0                           : 22089   0                          : 22089  
+ 1st Qu.: 2.000   1st Qu.:0.0000   1st Qu.: 2.000   has private health insurance:236613   has public health insurance: 33152  
+ Median : 3.000   Median :0.0000   Median : 2.000   no private health insurance : 11464   no public health insurance :214925  
+ Mean   : 2.978   Mean   :0.7821   Mean   : 2.195                                                                             
+ 3rd Qu.: 4.000   3rd Qu.:2.0000   3rd Qu.: 2.000                                                                             
+ Max.   :10.000   Max.   :5.0000   Max.   :10.000                                                                             
+                                                                                                                              
+                            work_kind                                   workloss      income_midpoint_factor           State       
+ employed by govt                : 50199   yes recent household loss of work: 31739   125000 :91907          California   : 22031  
+ employed by private co          :150146   no                               :238427   82500  :64993          Texas        : 13635  
+ employed by nonprofit or charity: 37275                                              225000 :63716          Washington   : 12537  
+ self employed                   : 28129                                              175000 :49550          Virginia     :  9027  
+ work for family business        :  4417                                              12500  :    0          Massachusetts:  8893  
+                                                                                      30000  :    0          Colorado     :  8042  
+                                                                                      (Other):    0          (Other)      :196001  
+       Region                Census_division       DOWN         ANXIOUS         WORRY          INTEREST          YEAR      
+ South    :82468   South Atlantic    :49055   Min.   :1.00   Min.   :1.00   Min.   :1.000   Min.   :1.000   Min.   :20.00  
+ West     :86917   Pacific           :48475   1st Qu.:1.00   1st Qu.:1.00   1st Qu.:1.000   1st Qu.:1.000   1st Qu.:21.00  
+ Northeast:45304   Mountain          :38442   Median :1.00   Median :2.00   Median :1.000   Median :1.000   Median :22.00  
+ Midwest  :55477   West North Central:28655   Mean   :1.51   Mean   :1.85   Mean   :1.606   Mean   :1.516   Mean   :21.78  
+                   East North Central:26822   3rd Qu.:2.00   3rd Qu.:2.00   3rd Qu.:2.000   3rd Qu.:2.000   3rd Qu.:23.00  
+                   New England       :26570   Max.   :4.00   Max.   :4.00   Max.   :4.000   Max.   :4.000   Max.   :24.00  
+                   (Other)           :52147                                                                                
+   Begin_Date             K4SUM       
+ Min.   :2020-04-23   Min.   : 4.000  
+ 1st Qu.:2021-04-28   1st Qu.: 4.000  
+ Median :2022-04-27   Median : 5.000  
+ Mean   :2022-05-20   Mean   : 6.482  
+ 3rd Qu.:2023-08-23   3rd Qu.: 8.000  
+ Max.   :2024-07-23   Max.   :16.000  
+                                      
+> 
+> # Optional: quick look at the distribution of K4SUM
+> table(high_inc$K4SUM)
+
+     4      5      6      7      8      9     10     11     12     13     14     15     16 
+103257  31829  31385  23905  28849  11776   9545   6588   6883   4052   3725   2582   5790 
+> 
+> # Optional: mean K4SUM among high-income individuals
+> mean(high_inc$K4SUM)
+[1] 6.482326
+> 
+> library(dplyr)
+> install.packages("skimr")
+Error in install.packages : Updating loaded packages
+> library(skimr)
+> 
+> # High-income subset (already created earlier)
+> high_inc <- d_HHP2020_24 %>%
++   filter(income_midpoint > 75000) %>%
++   na.omit()
+> 
+> # Clean summary table of key variables
+> summary_table <- high_inc %>%
++   select(K4SUM, Education, income_midpoint, Age)
+> 
+> skim(summary_table)
+── Data Summary ────────────────────────
+                           Values       
+Name                       summary_table
+Number of rows             270166       
+Number of columns          4            
+_______________________                 
+Column type frequency:                  
+  factor                   1            
+  numeric                  3            
+________________________                
+Group variables            None         
+
+── Variable type: factor ────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  skim_variable n_missing complete_rate ordered n_unique top_counts                                     
+1 Education             0             1 FALSE          7 adv: 102690, col: 95870, som: 36114, ass: 21278
+
+── Variable type: numeric ───────────────────────────────────────────────────────────────────────────────────────────────────────────
+  skim_variable   n_missing complete_rate      mean       sd    p0    p25    p50    p75   p100 hist 
+1 K4SUM                   0             1      6.48     2.99     4      4      5      8     16 ▇▂▂▁▁
+2 income_midpoint         0             1 147530.   52382.   82500 125000 125000 175000 225000 ▆▇▁▅▆
+3 Age                     0             1     47.2     12.3     17     38     46     56     88 ▂▇▇▃▁
+> 
+> summary_table <- summary(high_inc[, c("K4SUM", "Education", "income_midpoint", "Age")])
+> summary_table
+     K4SUM               Education      income_midpoint       Age       
+ Min.   : 4.000   lt hs       :   317   Min.   : 82500   Min.   :17.00  
+ 1st Qu.: 4.000   some hs     :   712   1st Qu.:125000   1st Qu.:38.00  
+ Median : 5.000   high school : 13185   Median :125000   Median :46.00  
+ Mean   : 6.482   some college: 36114   Mean   :147530   Mean   :47.19  
+ 3rd Qu.: 8.000   assoc deg   : 21278   3rd Qu.:175000   3rd Qu.:56.00  
+ Max.   :16.000   college grad: 95870   Max.   :225000   Max.   :88.00  
+                  adv degree  :102690                                   
+> 
+> library(dplyr)
+> 
+> data.frame(
++   Variable = c("K4SUM", "Age", "Income Midpoint"),
++   Mean     = c(mean(high_inc$K4SUM),
++                mean(high_inc$Age),
++                mean(high_inc$income_midpoint)),
++   Median   = c(median(high_inc$K4SUM),
++                median(high_inc$Age),
++                median(high_inc$income_midpoint)),
++   SD       = c(sd(high_inc$K4SUM),
++                sd(high_inc$Age),
++                sd(high_inc$income_midpoint)),
++   Min      = c(min(high_inc$K4SUM),
++                min(high_inc$Age),
++                min(high_inc$income_midpoint)),
++   Max      = c(max(high_inc$K4SUM),
++                max(high_inc$Age),
++                max(high_inc$income_midpoint))
++ )
+         Variable         Mean Median           SD   Min    Max
+1           K4SUM 6.482326e+00      5     2.991415     4     16
+2             Age 4.719011e+01     46    12.334136    17     88
+3 Income Midpoint 1.475302e+05 125000 52381.675339 82500 225000
+> install.packages("skimr")
+trying URL 'https://cran.rstudio.com/bin/macosx/big-sur-arm64/contrib/4.5/skimr_2.2.1.tgz'
+Content type 'application/x-gzip' length 1172792 bytes (1.1 MB)
+==================================================
+downloaded 1.1 MB
+
+
+The downloaded binary packages are in
+	/var/folders/3_/p7jkl6dd5ks9d_j7l8rv17h80000gn/T//Rtmp7QLXtk/downloaded_packages
+> # Exercise 3
+> 
+> # SUBSET: keep only individuals with income > 75,000
+> high_inc <- d_HHP2020_24 %>%
++   filter(income_midpoint > 75000) %>%
++   na.omit()   # remove missing values for clean summaries
+> 
+> # Summary statistics
+> summary(high_inc$K4SUM)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  4.000   4.000   5.000   6.482   8.000  16.000 
+> summary(high_inc$Education)
+       lt hs      some hs  high school some college    assoc deg college grad   adv degree 
+         317          712        13185        36114        21278        95870       102690 
+> summary(high_inc$income_midpoint)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  82500  125000  125000  147530  175000  225000 
+> summary(high_inc$Age)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  17.00   38.00   46.00   47.19   56.00   88.00 
+> 
+> # Or: full summary table
+> summary(high_inc)
+      Age           Gender              Education           Mar_Stat      income_midpoint     Race                Hispanic     
+ Min.   :17.00   male  :131217   lt hs       :   317   Married  :196185   Min.   : 82500   white:228433   not Hispanic:251810  
+ 1st Qu.:38.00   female:137470   some hs     :   712   widowed  :  3593   1st Qu.:125000   Black: 13410   Hispanic    : 18356  
+ Median :46.00   trans :   350   high school : 13185   divorced : 25203   Median :125000   Asian: 17039                        
+ Mean   :47.19   other :  1129   some college: 36114   separated:  2671   Mean   :147530   other: 11284                        
+ 3rd Qu.:56.00                   assoc deg   : 21278   never    : 42514   3rd Qu.:175000                                       
+ Max.   :88.00                   college grad: 95870                      Max.   :225000                                       
+                                 adv degree  :102690                                                                           
+ Number_people_HH Number_kids_HH   Number_adults_HH                    private_health_ins                   public_health_ins 
+ Min.   : 1.000   Min.   :0.0000   Min.   : 1.000   0                           : 22089   0                          : 22089  
+ 1st Qu.: 2.000   1st Qu.:0.0000   1st Qu.: 2.000   has private health insurance:236613   has public health insurance: 33152  
+ Median : 3.000   Median :0.0000   Median : 2.000   no private health insurance : 11464   no public health insurance :214925  
+ Mean   : 2.978   Mean   :0.7821   Mean   : 2.195                                                                             
+ 3rd Qu.: 4.000   3rd Qu.:2.0000   3rd Qu.: 2.000                                                                             
+ Max.   :10.000   Max.   :5.0000   Max.   :10.000                                                                             
+                                                                                                                              
+                            work_kind                                   workloss      income_midpoint_factor           State       
+ employed by govt                : 50199   yes recent household loss of work: 31739   125000 :91907          California   : 22031  
+ employed by private co          :150146   no                               :238427   82500  :64993          Texas        : 13635  
+ employed by nonprofit or charity: 37275                                              225000 :63716          Washington   : 12537  
+ self employed                   : 28129                                              175000 :49550          Virginia     :  9027  
+ work for family business        :  4417                                              12500  :    0          Massachusetts:  8893  
+                                                                                      30000  :    0          Colorado     :  8042  
+                                                                                      (Other):    0          (Other)      :196001  
+       Region                Census_division       DOWN         ANXIOUS         WORRY          INTEREST          YEAR      
+ South    :82468   South Atlantic    :49055   Min.   :1.00   Min.   :1.00   Min.   :1.000   Min.   :1.000   Min.   :20.00  
+ West     :86917   Pacific           :48475   1st Qu.:1.00   1st Qu.:1.00   1st Qu.:1.000   1st Qu.:1.000   1st Qu.:21.00  
+ Northeast:45304   Mountain          :38442   Median :1.00   Median :2.00   Median :1.000   Median :1.000   Median :22.00  
+ Midwest  :55477   West North Central:28655   Mean   :1.51   Mean   :1.85   Mean   :1.606   Mean   :1.516   Mean   :21.78  
+                   East North Central:26822   3rd Qu.:2.00   3rd Qu.:2.00   3rd Qu.:2.000   3rd Qu.:2.000   3rd Qu.:23.00  
+                   New England       :26570   Max.   :4.00   Max.   :4.00   Max.   :4.000   Max.   :4.000   Max.   :24.00  
+                   (Other)           :52147                                                                                
+   Begin_Date             K4SUM       
+ Min.   :2020-04-23   Min.   : 4.000  
+ 1st Qu.:2021-04-28   1st Qu.: 4.000  
+ Median :2022-04-27   Median : 5.000  
+ Mean   :2022-05-20   Mean   : 6.482  
+ 3rd Qu.:2023-08-23   3rd Qu.: 8.000  
+ Max.   :2024-07-23   Max.   :16.000  
+                                      
+> 
+> # Optional: quick look at the distribution of K4SUM
+> table(high_inc$K4SUM)
+
+     4      5      6      7      8      9     10     11     12     13     14     15     16 
+103257  31829  31385  23905  28849  11776   9545   6588   6883   4052   3725   2582   5790 
+> 
+> # Optional: mean K4SUM among high-income individuals
+> mean(high_inc$K4SUM)
+[1] 6.482326
+> 
+> library(dplyr)
+> install.packages("skimr")
+Error in install.packages : Updating loaded packages
+> library(skimr)
+> 
+> # High-income subset (already created earlier)
+> high_inc <- d_HHP2020_24 %>%
++   filter(income_midpoint > 75000) %>%
++   na.omit()
+> 
+> # Clean summary table of key variables
+> summary_table <- high_inc %>%
++   select(K4SUM, Education, income_midpoint, Age)
+> 
+> skim(summary_table)
+── Data Summary ────────────────────────
+                           Values       
+Name                       summary_table
+Number of rows             270166       
+Number of columns          4            
+_______________________                 
+Column type frequency:                  
+  factor                   1            
+  numeric                  3            
+________________________                
+Group variables            None         
+
+── Variable type: factor ────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  skim_variable n_missing complete_rate ordered n_unique top_counts                                     
+1 Education             0             1 FALSE          7 adv: 102690, col: 95870, som: 36114, ass: 21278
+
+── Variable type: numeric ───────────────────────────────────────────────────────────────────────────────────────────────────────────
+  skim_variable   n_missing complete_rate      mean       sd    p0    p25    p50    p75   p100 hist 
+1 K4SUM                   0             1      6.48     2.99     4      4      5      8     16 ▇▂▂▁▁
+2 income_midpoint         0             1 147530.   52382.   82500 125000 125000 175000 225000 ▆▇▁▅▆
+3 Age                     0             1     47.2     12.3     17     38     46     56     88 ▂▇▇▃▁
+> 
+> summary_table <- summary(high_inc[, c("K4SUM", "Education", "income_midpoint", "Age")])
+> summary_table
+     K4SUM               Education      income_midpoint       Age       
+ Min.   : 4.000   lt hs       :   317   Min.   : 82500   Min.   :17.00  
+ 1st Qu.: 4.000   some hs     :   712   1st Qu.:125000   1st Qu.:38.00  
+ Median : 5.000   high school : 13185   Median :125000   Median :46.00  
+ Mean   : 6.482   some college: 36114   Mean   :147530   Mean   :47.19  
+ 3rd Qu.: 8.000   assoc deg   : 21278   3rd Qu.:175000   3rd Qu.:56.00  
+ Max.   :16.000   college grad: 95870   Max.   :225000   Max.   :88.00  
+                  adv degree  :102690                                   
+> 
+> library(dplyr)
+> 
+> data.frame(
++   Variable = c("K4SUM", "Age", "Income Midpoint"),
++   Mean     = c(mean(high_inc$K4SUM),
++                mean(high_inc$Age),
++                mean(high_inc$income_midpoint)),
++   Median   = c(median(high_inc$K4SUM),
++                median(high_inc$Age),
++                median(high_inc$income_midpoint)),
++   SD       = c(sd(high_inc$K4SUM),
++                sd(high_inc$Age),
++                sd(high_inc$income_midpoint)),
++   Min      = c(min(high_inc$K4SUM),
++                min(high_inc$Age),
++                min(high_inc$income_midpoint)),
++   Max      = c(max(high_inc$K4SUM),
++                max(high_inc$Age),
++                max(high_inc$income_midpoint))
++ )
+         Variable         Mean Median           SD   Min    Max
+1           K4SUM 6.482326e+00      5     2.991415     4     16
+2             Age 4.719011e+01     46    12.334136    17     88
+3 Income Midpoint 1.475302e+05 125000 52381.675339 82500 225000
+> install.packages("skimr")
+trying URL 'https://cran.rstudio.com/bin/macosx/big-sur-arm64/contrib/4.5/skimr_2.2.1.tgz'
+Content type 'application/x-gzip' length 1172792 bytes (1.1 MB)
+==================================================
+downloaded 1.1 MB
+
+
+The downloaded binary packages are in
+	/var/folders/3_/p7jkl6dd5ks9d_j7l8rv17h80000gn/T//Rtmp7QLXtk/downloaded_packages
+> # Exercise 4
+> # Part A
+> 
+> high_inc$MentalHealth_01 <- as.numeric(high_inc$K4SUM > 8)
+> 
+> # OLS model (Linear Probability Model)
+> lpm1 <- lm(MentalHealth_01 ~ Age + Education + income_midpoint + Mar_Stat +
++              Age:Education,   # interaction
++            data = high_inc)
+> 
+> summary(lpm1)
+
+Call:
+lm(formula = MentalHealth_01 ~ Age + Education + income_midpoint + 
+    Mar_Stat + Age:Education, data = high_inc)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.48541 -0.21663 -0.15708 -0.08632  1.05462 
+
+Coefficients:
+                            Estimate Std. Error t value Pr(>|t|)    
+(Intercept)                2.320e-01  7.390e-02   3.140 0.001690 ** 
+Age                        1.644e-03  1.433e-03   1.147 0.251404    
+Educationsome hs           2.437e-01  8.973e-02   2.716 0.006613 ** 
+Educationhigh school       3.072e-01  7.509e-02   4.091 4.29e-05 ***
+Educationsome college      3.577e-01  7.430e-02   4.814 1.48e-06 ***
+Educationassoc deg         2.765e-01  7.471e-02   3.701 0.000215 ***
+Educationcollege grad      2.311e-01  7.403e-02   3.122 0.001795 ** 
+Educationadv degree        1.965e-01  7.404e-02   2.655 0.007938 ** 
+income_midpoint           -6.314e-07  1.495e-08 -42.244  < 2e-16 ***
+Mar_Statwidowed            3.520e-02  6.549e-03   5.376 7.64e-08 ***
+Mar_Statdivorced           3.863e-02  2.616e-03  14.764  < 2e-16 ***
+Mar_Statseparated          1.124e-01  7.498e-03  14.997  < 2e-16 ***
+Mar_Statnever              3.156e-02  2.178e-03  14.492  < 2e-16 ***
+Age:Educationsome hs      -6.039e-03  1.773e-03  -3.406 0.000659 ***
+Age:Educationhigh school  -7.265e-03  1.458e-03  -4.983 6.25e-07 ***
+Age:Educationsome college -7.743e-03  1.442e-03  -5.370 7.90e-08 ***
+Age:Educationassoc deg    -6.427e-03  1.451e-03  -4.431 9.40e-06 ***
+Age:Educationcollege grad -5.809e-03  1.437e-03  -4.044 5.26e-05 ***
+Age:Educationadv degree   -5.142e-03  1.437e-03  -3.580 0.000344 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.3845 on 270147 degrees of freedom
+Multiple R-squared:  0.03355,	Adjusted R-squared:  0.03349 
+F-statistic: 521.1 on 18 and 270147 DF,  p-value: < 2.2e-16
+
+> 
+> # Part B
+> 
+> # You already ran:
+> # lpm1 <- lm(MentalHealth_01 ~ Age + Education + income_midpoint + Mar_Stat +
+> #              Age:Education, data = high_inc)
+> 
+> # 1. Full regression output
+> summary(lpm1)
+
+Call:
+lm(formula = MentalHealth_01 ~ Age + Education + income_midpoint + 
+    Mar_Stat + Age:Education, data = high_inc)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.48541 -0.21663 -0.15708 -0.08632  1.05462 
+
+Coefficients:
+                            Estimate Std. Error t value Pr(>|t|)    
+(Intercept)                2.320e-01  7.390e-02   3.140 0.001690 ** 
+Age                        1.644e-03  1.433e-03   1.147 0.251404    
+Educationsome hs           2.437e-01  8.973e-02   2.716 0.006613 ** 
+Educationhigh school       3.072e-01  7.509e-02   4.091 4.29e-05 ***
+Educationsome college      3.577e-01  7.430e-02   4.814 1.48e-06 ***
+Educationassoc deg         2.765e-01  7.471e-02   3.701 0.000215 ***
+Educationcollege grad      2.311e-01  7.403e-02   3.122 0.001795 ** 
+Educationadv degree        1.965e-01  7.404e-02   2.655 0.007938 ** 
+income_midpoint           -6.314e-07  1.495e-08 -42.244  < 2e-16 ***
+Mar_Statwidowed            3.520e-02  6.549e-03   5.376 7.64e-08 ***
+Mar_Statdivorced           3.863e-02  2.616e-03  14.764  < 2e-16 ***
+Mar_Statseparated          1.124e-01  7.498e-03  14.997  < 2e-16 ***
+Mar_Statnever              3.156e-02  2.178e-03  14.492  < 2e-16 ***
+Age:Educationsome hs      -6.039e-03  1.773e-03  -3.406 0.000659 ***
+Age:Educationhigh school  -7.265e-03  1.458e-03  -4.983 6.25e-07 ***
+Age:Educationsome college -7.743e-03  1.442e-03  -5.370 7.90e-08 ***
+Age:Educationassoc deg    -6.427e-03  1.451e-03  -4.431 9.40e-06 ***
+Age:Educationcollege grad -5.809e-03  1.437e-03  -4.044 5.26e-05 ***
+Age:Educationadv degree   -5.142e-03  1.437e-03  -3.580 0.000344 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.3845 on 270147 degrees of freedom
+Multiple R-squared:  0.03355,	Adjusted R-squared:  0.03349 
+F-statistic: 521.1 on 18 and 270147 DF,  p-value: < 2.2e-16
+
+> 
+> # 2. Extract coefficients and p-values
+> coefs <- summary(lpm1)$coefficients
+> coefs
+                               Estimate   Std. Error    t value     Pr(>|t|)
+(Intercept)                2.320409e-01 7.389999e-02   3.139931 1.690057e-03
+Age                        1.643899e-03 1.433280e-03   1.146949 2.514038e-01
+Educationsome hs           2.436786e-01 8.972792e-02   2.715750 6.613003e-03
+Educationhigh school       3.072192e-01 7.509070e-02   4.091308 4.290707e-05
+Educationsome college      3.576801e-01 7.429890e-02   4.814070 1.479666e-06
+Educationassoc deg         2.765175e-01 7.471451e-02   3.700988 2.148041e-04
+Educationcollege grad      2.311287e-01 7.402536e-02   3.122291 1.794684e-03
+Educationadv degree        1.965446e-01 7.403553e-02   2.654733 7.937581e-03
+income_midpoint           -6.313875e-07 1.494632e-08 -42.243674 0.000000e+00
+Mar_Statwidowed            3.520443e-02 6.548841e-03   5.375673 7.636034e-08
+Mar_Statdivorced           3.862729e-02 2.616250e-03  14.764373 2.598987e-49
+Mar_Statseparated          1.124492e-01 7.497950e-03  14.997324 8.013448e-51
+Mar_Statnever              3.156063e-02 2.177796e-03  14.492002 1.418394e-47
+Age:Educationsome hs      -6.039126e-03 1.773074e-03  -3.406020 6.592684e-04
+Age:Educationhigh school  -7.264739e-03 1.457817e-03  -4.983301 6.254714e-07
+Age:Educationsome college -7.742690e-03 1.441958e-03  -5.369567 7.899067e-08
+Age:Educationassoc deg    -6.426960e-03 1.450567e-03  -4.430655 9.398395e-06
+Age:Educationcollege grad -5.809403e-03 1.436673e-03  -4.043650 5.264015e-05
+Age:Educationadv degree   -5.142443e-03 1.436516e-03  -3.579801 3.439157e-04
+> 
+> # 3. See which variables are statistically significant at 5%
+> sig_5pct <- coefs[, "Pr(>|t|)"] < 0.05
+> sig_5pct
+              (Intercept)                       Age          Educationsome hs      Educationhigh school     Educationsome college 
+                     TRUE                     FALSE                      TRUE                      TRUE                      TRUE 
+       Educationassoc deg     Educationcollege grad       Educationadv degree           income_midpoint           Mar_Statwidowed 
+                     TRUE                      TRUE                      TRUE                      TRUE                      TRUE 
+         Mar_Statdivorced         Mar_Statseparated             Mar_Statnever      Age:Educationsome hs  Age:Educationhigh school 
+                     TRUE                      TRUE                      TRUE                      TRUE                      TRUE 
+Age:Educationsome college    Age:Educationassoc deg Age:Educationcollege grad   Age:Educationadv degree 
+                     TRUE                      TRUE                      TRUE                      TRUE 
+> 
+> # Part C
+> 
+> linearHypothesis(lpm1,
++                  c("Educationsome hs = 0",
++                    "Educationhigh school = 0",
++                    "Educationsome college = 0",
++                    "Educationassoc deg = 0",
++                    "Educationcollege grad = 0",
++                    "Educationadv degree = 0"))
+
+Linear hypothesis test:
+Educationsome hs = 0
+Educationhigh school = 0
+Educationsome college = 0
+Educationassoc deg = 0
+Educationcollege grad = 0
+Educationadv degree = 0
+
+Model 1: restricted model
+Model 2: MentalHealth_01 ~ Age + Education + income_midpoint + Mar_Stat + 
+    Age:Education
+
+  Res.Df   RSS Df Sum of Sq      F    Pr(>F)    
+1 270153 40000                                  
+2 270147 39949  6    50.907 57.375 < 2.2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> linearHypothesis(lpm1,
++                  c("Educationsome hs = 0",
++                    "Educationhigh school = 0",
++                    "Educationsome college = 0",
++                    "Educationassoc deg = 0",
++                    "Educationcollege grad = 0",
++                    "Educationadv degree = 0",
++                    "Age:Educationsome hs = 0",
++                    "Age:Educationhigh school = 0",
++                    "Age:Educationsome college = 0",
++                    "Age:Educationassoc deg = 0",
++                    "Age:Educationcollege grad = 0",
++                    "Age:Educationadv degree = 0"))
+
+Linear hypothesis test:
+Educationsome hs = 0
+Educationhigh school = 0
+Educationsome college = 0
+Educationassoc deg = 0
+Educationcollege grad = 0
+Educationadv degree = 0
+Age:Educationsome hs = 0
+Age:Educationhigh school = 0
+Age:Educationsome college = 0
+Age:Educationassoc deg = 0
+Age:Educationcollege grad = 0
+Age:Educationadv degree = 0
+
+Model 1: restricted model
+Model 2: MentalHealth_01 ~ Age + Education + income_midpoint + Mar_Stat + 
+    Age:Education
+
+  Res.Df   RSS Df Sum of Sq      F    Pr(>F)    
+1 270159 40023                                  
+2 270147 39949 12     74.33 41.887 < 2.2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> # Part D
+> 
+> # Example people
+> new_people <- data.frame(
++   Age = c(25, 45, 60),
++   Education = factor(c("some hs", "college grad", "adv degree"),
++                      levels = levels(high_inc$Education)),
++   income_midpoint = c(80000, 150000, 200000),
++   Mar_Stat = factor(c("never", "Married", "divorced"),
++                     levels = levels(high_inc$Mar_Stat))
++ )
+> 
+> # Predicted probabilities from your OLS model
+> predict(lpm1, newdata = new_people)
+        1         2         3 
+0.3468885 0.1810139 0.1310227 
+> 
+> # Part E
+> 
+> # 1. Get predicted probabilities from the LPM
+> pred_probs <- predict(lpm1, newdata = high_inc)
+> 
+> # 2. Turn probabilities into predicted classes (0/1) using 0.5 cutoff
+> pred_class <- ifelse(pred_probs > 0.5, 1, 0)
+> 
+> # 3. Actual classes
+> actual <- high_inc$MentalHealth_01
+> 
+> # 4. Confusion matrix (for reference)
+> conf_matrix <- table(predicted = pred_class, actual = actual)
+> print(conf_matrix)
+         actual
+predicted      0      1
+        0 219225  50941
+> 
+> # 5. Type I and Type II errors computed directly
+> 
+> # Type I Error (False Positive): predict 1, actual 0
+> type1_error_count <- sum(pred_class == 1 & actual == 0, na.rm = TRUE)
+> 
+> # Type II Error (False Negative): predict 0, actual 1
+> type2_error_count <- sum(pred_class == 0 & actual == 1, na.rm = TRUE)
+> 
+> cat("Type I Errors (False Positives):", type1_error_count, "\n")
+Type I Errors (False Positives): 0 
+> cat("Type II Errors (False Negatives):", type2_error_count, "\n")
+Type II Errors (False Negatives): 50941 
+> # Exercise 5
+> 
+> # Part A
+> 
+> logit1 <- glm(MentalHealth_01 ~ Age + Education + income_midpoint + Mar_Stat,
++               data = high_inc,
++               family = binomial)
+> 
+> summary(logit1)
+
+Call:
+glm(formula = MentalHealth_01 ~ Age + Education + income_midpoint + 
+    Mar_Stat, family = binomial, data = high_inc)
+
+Coefficients:
+                        Estimate Std. Error z value Pr(>|z|)    
+(Intercept)            7.517e-01  1.367e-01   5.497 3.86e-08 ***
+Age                   -2.990e-02  4.597e-04 -65.059  < 2e-16 ***
+Educationsome hs      -3.176e-01  1.643e-01  -1.933   0.0532 .  
+Educationhigh school  -2.839e-01  1.362e-01  -2.084   0.0372 *  
+Educationsome college -1.109e-01  1.350e-01  -0.821   0.4115    
+Educationassoc deg    -2.122e-01  1.355e-01  -1.566   0.1173    
+Educationcollege grad -3.213e-01  1.347e-01  -2.386   0.0170 *  
+Educationadv degree   -3.386e-01  1.347e-01  -2.514   0.0119 *  
+income_midpoint       -4.353e-06  1.044e-07 -41.698  < 2e-16 ***
+Mar_Statwidowed        2.511e-01  4.669e-02   5.378 7.54e-08 ***
+Mar_Statdivorced       2.749e-01  1.724e-02  15.942  < 2e-16 ***
+Mar_Statseparated      6.631e-01  4.363e-02  15.199  < 2e-16 ***
+Mar_Statnever          1.664e-01  1.358e-02  12.258  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 261586  on 270165  degrees of freedom
+Residual deviance: 252609  on 270153  degrees of freedom
+AIC: 252635
+
+Number of Fisher Scoring iterations: 4
+
+> 
+> 
+> library(car)
+> 
+> linearHypothesis(logit1,
++                  c("Educationsome hs = 0",
++                    "Educationhigh school = 0",
++                    "Educationsome college = 0",
++                    "Educationassoc deg = 0",
++                    "Educationcollege grad = 0",
++                    "Educationadv degree = 0"))
+
+Linear hypothesis test:
+Educationsome hs = 0
+Educationhigh school = 0
+Educationsome college = 0
+Educationassoc deg = 0
+Educationcollege grad = 0
+Educationadv degree = 0
+
+Model 1: restricted model
+Model 2: MentalHealth_01 ~ Age + Education + income_midpoint + Mar_Stat
+
+  Res.Df Df  Chisq Pr(>Chisq)    
+1 270159                         
+2 270153  6 253.89  < 2.2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> linearHypothesis(logit1,
++                  c("Mar_Statwidowed = 0",
++                    "Mar_Statdivorced = 0",
++                    "Mar_Statseparated = 0",
++                    "Mar_Statnever = 0"))
+
+Linear hypothesis test:
+Mar_Statwidowed = 0
+Mar_Statdivorced = 0
+Mar_Statseparated = 0
+Mar_Statnever = 0
+
+Model 1: restricted model
+Model 2: MentalHealth_01 ~ Age + Education + income_midpoint + Mar_Stat
+
+  Res.Df Df  Chisq Pr(>Chisq)    
+1 270157                         
+2 270153  4 564.22  < 2.2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+> 
+> # PArt D
+> 
+> # Example profiles for prediction
+> new_people_logit <- data.frame(
++   Age = c(25, 45, 60),
++   Education = factor(c("some hs", "college grad", "adv degree"),
++                      levels = levels(high_inc$Education)),
++   income_midpoint = c(80000, 150000, 200000),
++   Mar_Stat = factor(c("never", "Married", "divorced"),
++                     levels = levels(high_inc$Mar_Stat))
++ )
+> 
+> # Predicted probabilities from the LOGIT model
+> predict(logit1, newdata = new_people_logit, type = "response")
+        1         2         3 
+0.3786453 0.1724674 0.1216576 
+> 
+> # PArt E
+> 
+> # 1. Predicted probabilities from the logit model
+> logit_probs <- predict(logit1, newdata = high_inc, type = "response")
+> 
+> # 2. Turn probabilities into predicted classes (0/1) with cutoff 0.5
+> logit_pred_class <- ifelse(logit_probs > 0.5, 1, 0)
+> 
+> # 3. Actual values
+> actual <- high_inc$MentalHealth_01
+> 
+> # 4. Confusion matrix
+> conf_matrix_logit <- table(predicted = logit_pred_class,
++                            actual = actual)
+> conf_matrix_logit
+         actual
+predicted      0      1
+        0 219217  50930
+        1      8     11
+> 
+> # 5. Count Type I and Type II errors
+> 
+> # Type I error (False Positive): predicted 1, actual 0
+> type1_logit <- sum(logit_pred_class == 1 & actual == 0, na.rm = TRUE)
+> 
+> # Type II error (False Negative): predicted 0, actual 1
+> type2_logit <- sum(logit_pred_class == 0 & actual == 1, na.rm = TRUE)
+> 
+> cat("Type I errors (false positives):", type1_logit, "\n")
+Type I errors (false positives): 8 
+> cat("Type II errors (false negatives):", type2_logit, "\n")
+Type II errors (false negatives): 50930 
+> # Exercise 6
+> 
+> library(randomForest)
+> 
+> set.seed(123)
+> rf_model <- randomForest(
++   as.factor(MentalHealth_01) ~ Age + Education + income_midpoint + Mar_Stat,
++   data = high_inc,
++   ntree = 300,
++   importance = TRUE
++ )
+> 
+> rf_model
+
+Call:
+ randomForest(formula = as.factor(MentalHealth_01) ~ Age + Education +      income_midpoint + Mar_Stat, data = high_inc, ntree = 300,      importance = TRUE) 
+               Type of random forest: classification
+                     Number of trees: 300
+No. of variables tried at each split: 2
+
+        OOB estimate of  error rate: 18.87%
+Confusion matrix:
+       0   1  class.error
+0 219054 171 0.0007800205
+1  50813 128 0.9974872892
+> importance(rf_model)
+                       0          1 MeanDecreaseAccuracy MeanDecreaseGini
+Age             65.70799 -16.878442             72.53167        2166.3194
+Education       28.40861  -4.445399             31.29088         510.2104
+income_midpoint 15.33978  -3.159041             16.40957         925.0550
+Mar_Stat        63.17770 -23.889117             71.97635         612.2322
+> 
+> rf_pred <- predict(rf_model, high_inc)
+> rf_conf <- table(predicted = rf_pred, actual = high_inc$MentalHealth_01)
+> rf_conf
+         actual
+predicted      0      1
+        0 219182  50694
+        1     43    247
+> 
+> library(glmnet)
+> 
+> X <- model.matrix(MentalHealth_01 ~ Age + Education + income_midpoint + Mar_Stat,
++                   data = high_inc)[, -1]
+> y <- high_inc$MentalHealth_01
+> 
+> cv_en <- cv.glmnet(X, y, family = "binomial", alpha = 0.5)
+> en_model <- glmnet(X, y, family = "binomial", alpha = 0.5, lambda = cv_en$lambda.min)
+> 
+> en_model
